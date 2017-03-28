@@ -70,7 +70,7 @@ import (
 		-	Identify Adverb(s) - (Attributes about the verb, adjective, or adverb)
 		-	Identify Conjunction(s) - (Used to separate sub-sentences)
 		-	Identify Preposition(s) - (Used to define relationship)
-		-	Identify Instance(s) of Self in given context
+		-
 		-
 		-	Reading each word from left to right, create generic
 		-		relationships between entities, actions, and attributes which
@@ -95,6 +95,7 @@ type NLP struct {
 	Adverbs      map[string]struct{} //List of known adverbs
 	Conjunctions map[string]struct{} //List of known conjunctions
 	Prepositions map[string]struct{} //List of known prepositions
+
 } //End NLP
 
 //NewNLP -: Instantiate a new NLP instance
@@ -293,3 +294,5 @@ func (nlp *NLP) Save(path string) {
 		os.Exit(1)
 	}
 } //End Save()
+
+//
