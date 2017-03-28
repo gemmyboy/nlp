@@ -10,14 +10,28 @@ package nlp
 
 //Sentence -: data structure used to hole entire input
 type Sentence struct {
+	sType string //Sentence type
 	raw   string //Raw Sentence
-	words map[string]*Word
+	words []*Word
 } //End Sentence
 
 //Word -: container for grammar data
 type Word struct {
-	rawWord    string   //Raw word
-	identifier []string //Array of grammar identifiers IE noun, verb, etc...
-	self       bool     //Does this word reference self?
-	unknown    bool     //Does nlp know this word?
+	rawWord string //Raw word
+
+	//Semantical Definition
+	tense   int  //unknown: 0, past: 1, present: 2, future: 3
+	self    bool //Does this word reference self?
+	unknown bool //Does nlp know this word?
+	pov     int  //unknown: 0, 1st: 1, 2nd: 2, 3rd: 3
+
+	//Words can be ambigious. Context will clarify this later
+	//Syntactical Identification
+	noun         bool
+	verb         bool
+	adjective    bool
+	adverb       bool
+	conjunction  bool
+	prepositions bool
+	syntaxID     int
 } //End Word

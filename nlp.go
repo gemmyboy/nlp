@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"log"
 	"os"
+	"strings"
 )
 
 /*
@@ -62,8 +63,6 @@ import (
 	general grammar terms to each word. Like identifying the entity(noun) & action(verb) being referenced.
 
 	Algorithm:
-		- Check for number of sentences in input
-		- Loop through sentences in order:
 		-	Identify Noun(s)
 		-	Identify Verb(s)
 		-	Identify Adjective(s) - (Attributes about the noun)
@@ -95,7 +94,8 @@ type NLP struct {
 	Adverbs      map[string]struct{} //List of known adverbs
 	Conjunctions map[string]struct{} //List of known conjunctions
 	Prepositions map[string]struct{} //List of known prepositions
-
+	Articles     map[string]struct{} //List of known articles
+	Pronouns     map[string]struct{} //List of known pronouns
 } //End NLP
 
 //NewNLP -: Instantiate a new NLP instance
@@ -177,7 +177,7 @@ func newNLPInstance(nlp *NLP) *NLP {
 		"consider": v, "considered": v, "offer": v, "offered": v,
 		"serve": v, "served": v, "die": v, "died": v, "send": v,
 		"sent": v, "receive": v, "received": v, "who": v,
-		"what": v, "when": v, "where": v, "why": v, "how": v,
+		"what": v, "when": v, "why": v, "how": v,
 		"does": v,
 	} //End verbs
 
@@ -233,7 +233,8 @@ func newNLPInstance(nlp *NLP) *NLP {
 		"tomorrow": v, "too": v, "truthfully": v,
 		"unexpectedly": v, "very": v, "victoriously": v, "violently": v,
 		"vivaciously": v, "warmly": v, "weakly": v, "wearily": v,
-		"well": v, "wildly": v, "yearly": v, "yesterday": v,
+		"well": v, "wildly": v, "yearly": v, "yesterday": v, "where": v,
+		"why": v, "how": v,
 	} //End adverbs
 
 	nlp.Conjunctions = map[string]struct{}{
@@ -244,7 +245,7 @@ func newNLPInstance(nlp *NLP) *NLP {
 		"if": v, "in case": v, "now that": v, "once": v,
 		"since": v, "so that": v, "than": v, "the first time": v,
 		"unless": v, "until": v, "when": v, "whenever": v,
-		"whether or not": v, "while": v, "why": v,
+		"whether or not": v, "while": v, "why": v, "where": v,
 	} //End conjunctions
 
 	nlp.Prepositions = map[string]struct{}{
@@ -259,6 +260,24 @@ func newNLPInstance(nlp *NLP) *NLP {
 		"to": v, "toward": v, "towards": v, "under": v, "underneath": v,
 		"until": v, "up": v, "upon": v, "with": v, "within": v, "without": v,
 	} //End prepositions
+
+	nlp.Articles = map[string]struct{}{
+		"the": v, "a": v, "an": v,
+	} //End articles
+
+	nlp.Pronouns = map[string]struct{}{
+		"I": v, "you": v, "he": v, "she": v,
+		"it": v, "we": v, "they": v, "me": v,
+		"him": v, "her": v, "us": v, "them": v,
+		"mine": v, "yours": v, "his": v, "hers": v,
+		"ours": v, "theirs": v, "their": v,
+		"this": v, "that": v, "such": v, "which": v,
+		"who": v, "what": v, "when": v, "where": v,
+		"how": v, "each": v, "either": v, "some": v,
+		"any": v, "many": v, "few": v, "all": v,
+		"themselves": v, "himself": v, "herself": v,
+		"its": v,
+	}
 
 	return nlp
 } //End newNLPInstance()
@@ -295,4 +314,93 @@ func (nlp *NLP) Save(path string) {
 	}
 } //End Save()
 
-//
+//Process -: Process the input given and produce a sentence.
+func (nlp *NLP) Process(input string) *Sentence {
+	s := new(Sentence)
+	s.raw = input
+
+	//Identify Syntactical Significance
+
+	//Iterate over every word
+	ss := strings.Split(input, " ")
+	for i := 0; i < len(ss); i++ {
+		w := new(Word)
+		w.rawWord = ss[i]
+		w.unknown = true
+
+		//Noun
+		if _, ok := nlp.Nouns[w.rawWord]; ok {
+			w.noun = true
+			w.unknown = false
+			w.syntaxID++
+		}
+
+		//Adjective
+		if _, ok := nlp.Adjectives[w.rawWord]; ok {
+			w.adjective = true
+			w.unknown = false
+			w.syntaxID++
+		}
+
+		//Verb
+		if _, ok := nlp.Verbs[w.rawWord]; ok {
+			w.verb = true
+			w.unknown = false
+			w.syntaxID++
+		}
+
+		//Adverb
+		if _, ok := nlp.Adverbs[w.rawWord]; ok {
+			w.adverb = true
+			w.unknown = false
+			w.syntaxID++
+		}
+
+		//Conjunction
+		if _, ok := nlp.Conjunctions[w.rawWord]; ok {
+			w.conjunction = true
+			w.unknown = false
+			w.syntaxID++
+		}
+
+		//Preposition
+		if _, ok := nlp.Prepositions[w.rawWord]; ok {
+			w.prepositions = true
+			w.unknown = false
+			w.syntaxID++
+		}
+
+		s.words = append(s.words, w)
+	} //End for
+
+	//Identify Semantical Significance
+	for i := 0; i < len(s.words); i++ {
+		w := s.words[i]
+
+		//First POV
+		if w.rawWord == "i" {
+			w.pov = 1
+		} else if w.rawWord == "we" {
+			w.pov = 1
+			w.self = true
+		}
+
+		//Second POV
+		if w.rawWord == "you" || w.rawWord == "your" || w.rawWord == "yours" ||
+			w.rawWord == "yourself" || w.rawWord == "yourselves" {
+			w.pov = 2
+			w.self = true
+		}
+
+		//Third POV - Mostly the default context or POV
+		if w.rawWord == "he" || w.rawWord == "him" || w.rawWord == "his" || w.rawWord == "himself" ||
+			w.rawWord == "she" || w.rawWord == "her" || w.rawWord == "hers" || w.rawWord == "herself" ||
+			w.rawWord == "it" || w.rawWord == "its" || w.rawWord == "itself" || w.rawWord == "they" ||
+			w.rawWord == "them" || w.rawWord == "their" || w.rawWord == "theirs" || w.rawWord == "themselves" {
+			w.pov = 3
+		}
+
+	} //End for
+
+	return s
+} //End Process()
